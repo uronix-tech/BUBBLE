@@ -44,8 +44,11 @@
   .status-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00e5a0; animation: blink 2s infinite; flex-shrink: 0; }
   .status-dot.off { background: var(--danger); animation: none; }
-  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .status-text { font-size: 0.85rem; }
+  .gps-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+  .gps-pill { background: var(--surface2); border-radius: 8px; padding: 3px 10px; font-size: 0.7rem; color: var(--muted); font-family: monospace; }
+  .gps-pill.ok { color: #00e5a0; }
   .share-box { margin-top: 1rem; background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.2); border-radius: 14px; padding: 1rem; }
   .share-label { font-size: 0.7rem; color: var(--accent); margin-bottom: 0.6rem; letter-spacing: 1px; text-transform: uppercase; }
   .share-btn { width: 100%; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); border-radius: 10px; padding: 0.7rem; color: var(--accent); font-size: 0.85rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
@@ -101,6 +104,9 @@
       <div class="status-dot" id="statusDot"></div>
       <div class="status-text" id="statusText">מתחבר...</div>
     </div>
+    <div class="gps-row">
+      <span class="gps-pill" id="gpsPill">📍 GPS: ממתין...</span>
+    </div>
     <div class="share-box" id="shareBox" style="display:none">
       <div class="share-label">📤 שתף עם חברים לסריקה</div>
       <button class="share-btn" onclick="shareLink()">שתף קישור לסריקה</button>
@@ -120,6 +126,9 @@ let currentMode = 'networking';
 let profileId = null;
 let dbRef = null;
 let keepAlive = null;
+let currentLat = null;
+let currentLng = null;
+let gpsWatcher = null;
 
 window.handleAvatar = (e) => {
   const file = e.target.files[0];
@@ -149,6 +158,29 @@ window.selectMode = (el, mode) => {
   currentMode = mode;
 };
 
+function startGPS() {
+  if (!navigator.geolocation) {
+    document.getElementById('gpsPill').textContent = '📍 GPS: לא נתמך';
+    return;
+  }
+  gpsWatcher = navigator.geolocation.watchPosition(
+    (pos) => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      const pill = document.getElementById('gpsPill');
+      pill.textContent = `📍 ${currentLat.toFixed(5)}, ${currentLng.toFixed(5)}`;
+      pill.classList.add('ok');
+      if (broadcasting && dbRef) {
+        set(dbRef, { ...getProfile(), timestamp: Date.now() });
+      }
+    },
+    (err) => {
+      document.getElementById('gpsPill').textContent = '📍 GPS: ' + err.message;
+    },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+  );
+}
+
 const getProfile = () => ({
   id: profileId,
   name: document.getElementById('name').value || 'אנונימי',
@@ -162,6 +194,8 @@ const getProfile = () => ({
     github: document.getElementById('github').value,
   },
   avatar: localStorage.getItem('bubble_avatar') || null,
+  lat: currentLat,
+  lng: currentLng,
   timestamp: Date.now(),
   active: true
 });
@@ -172,19 +206,32 @@ window.toggleBroadcast = async () => {
   if (currentMode === 'off') { alert('בחר מצב שידור'); return; }
 
   document.getElementById('statusPanel').classList.add('visible');
-  document.getElementById('statusText').textContent = 'מתחבר ל-Firebase...';
+  document.getElementById('statusText').textContent = 'מבקש GPS...';
 
+  startGPS();
+
+  // Wait up to 5s for GPS
+  await new Promise(resolve => {
+    let tries = 0;
+    const check = setInterval(() => {
+      tries++;
+      if (currentLat || tries > 10) { clearInterval(check); resolve(); }
+    }, 500);
+  });
+
+  document.getElementById('statusText').textContent = 'מתחבר ל-Firebase...';
   profileId = 'u_' + Date.now().toString(36);
   dbRef = ref(db, 'bubbles/' + profileId);
 
   try {
     await set(dbRef, getProfile());
     onDisconnect(dbRef).remove();
-
     broadcasting = true;
     document.getElementById('broadcastBtn').textContent = '⛔ סגור את הבועה שלי';
     document.getElementById('broadcastBtn').classList.add('active');
-    document.getElementById('statusText').textContent = '✅ הבועה פתוחה · כל העולם יכול לראות אותך';
+    document.getElementById('statusText').textContent = currentLat
+      ? '✅ הבועה פתוחה · עם GPS'
+      : '✅ הבועה פתוחה · ללא GPS';
     document.getElementById('shareBox').style.display = 'block';
 
     keepAlive = setInterval(() => {
@@ -199,6 +246,7 @@ window.toggleBroadcast = async () => {
 async function stopBroadcast() {
   broadcasting = false;
   clearInterval(keepAlive);
+  if (gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
   if (dbRef) try { await remove(dbRef); } catch(e) {}
   document.getElementById('broadcastBtn').textContent = '📡 פתח את הבועה שלי';
   document.getElementById('broadcastBtn').classList.remove('active');
