@@ -7,267 +7,63 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --accent: #00e5ff;
-    --accent2: #7c4dff;
-    --danger: #ff4d6d;
-  }
-  body {
-    background: #000;
-    color: #fff;
-    font-family: 'DM Sans', sans-serif;
-    width: 100vw; height: 100vh;
-    overflow: hidden;
-    position: relative;
-  }
+  body { background: #000; color: #fff; font-family: 'DM Sans', sans-serif; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+  #video { position: fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  #canvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+  .hud-corner { position:fixed; width:28px; height:28px; border-color:rgba(0,229,255,0.7); border-style:solid; z-index:5; pointer-events:none; }
+  .hud-tl { top:60px; left:16px; border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
+  .hud-tr { top:60px; right:16px; border-width:2px 2px 0 0; border-radius:0 4px 0 0; }
+  .hud-bl { bottom:100px; left:16px; border-width:0 0 2px 2px; border-radius:0 0 0 4px; }
+  .hud-br { bottom:100px; right:16px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+  .scan-line { position:fixed; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, rgba(0,229,255,0.6), transparent); animation:scanDown 3s linear infinite; z-index:4; pointer-events:none; }
+  @keyframes scanDown { 0%{top:60px;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:calc(100vh - 100px);opacity:0} }
+  .top-bar { position:fixed; top:0; left:0; right:0; padding:0.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; z-index:10; background:linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); }
+  .back-btn { color:rgba(255,255,255,0.8); text-decoration:none; font-size:1.3rem; width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); border-radius:50%; border:1px solid rgba(255,255,255,0.15); }
+  .top-info { display:flex; flex-direction:column; align-items:center; }
+  .top-title { font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700; color:#00e5ff; letter-spacing:1px; }
+  .top-sub { font-size:0.65rem; color:rgba(255,255,255,0.5); }
+  .active-count { background:rgba(0,0,0,0.5); border:1px solid rgba(0,229,255,0.3); border-radius:20px; padding:4px 12px; font-size:0.7rem; color:#00e5ff; display:flex; align-items:center; gap:6px; }
+  .active-dot { width:5px; height:5px; border-radius:50%; background:#00e5a0; animation:blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  /* Camera feed */
-  #video {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    z-index: 0;
-  }
+  .bubble-card { position:fixed; background:rgba(8,12,16,0.82); backdrop-filter:blur(16px); border:1px solid rgba(0,229,255,0.35); border-radius:18px; padding:10px 14px; min-width:155px; max-width:195px; z-index:8; pointer-events:auto; animation:bubbleIn 0.4s cubic-bezier(0.34,1.56,0.64,1); cursor:pointer; }
+  @keyframes bubbleIn { 0%{transform:scale(0.5) translateY(20px);opacity:0} 100%{transform:scale(1) translateY(0);opacity:1} }
+  .bubble-tail { position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:1px; height:8px; background:rgba(0,229,255,0.4); }
+  .bubble-dot { position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:rgba(0,229,255,0.5); }
+  .bubble-ring { position:absolute; border-radius:50%; border:1px solid rgba(0,229,255,0.3); animation:ringPulse 2.5s ease-out infinite; }
+  @keyframes ringPulse { 0%{width:10px;height:10px;opacity:0.6;bottom:-18px;left:50%;transform:translateX(-50%)} 100%{width:36px;height:36px;opacity:0;bottom:-32px;left:50%;transform:translateX(-50%)} }
+  .bubble-avatar { width:30px; height:30px; border-radius:50%; object-fit:cover; float:right; margin-left:8px; border:1.5px solid rgba(0,229,255,0.4); }
+  .bubble-avatar-ph { width:30px; height:30px; border-radius:50%; background:rgba(0,229,255,0.15); border:1.5px solid rgba(0,229,255,0.3); display:flex; align-items:center; justify-content:center; font-size:0.85rem; float:right; margin-left:8px; }
+  .bubble-name { font-family:'Syne',sans-serif; font-size:0.82rem; font-weight:700; color:#fff; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bubble-role { font-size:0.65rem; color:rgba(255,255,255,0.55); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bubble-socials { display:flex; gap:4px; flex-wrap:wrap; clear:both; }
+  .bubble-pill { background:rgba(255,255,255,0.1); border-radius:6px; padding:2px 7px; font-size:0.62rem; color:rgba(255,255,255,0.7); }
+  .bubble-mode { position:absolute; top:-8px; right:10px; background:rgba(0,0,0,0.85); border:1px solid rgba(0,229,255,0.4); border-radius:8px; padding:1px 7px; font-size:0.58rem; color:#00e5ff; }
 
-  /* AR overlay canvas */
-  #canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 1;
-    pointer-events: none;
-  }
+  .bottom-tray { position:fixed; bottom:0; left:0; right:0; padding:0.8rem 1.2rem 1.4rem; background:linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index:10; display:flex; align-items:center; justify-content:space-between; }
+  .tray-info { font-size:0.7rem; color:rgba(255,255,255,0.4); }
+  .tray-info b { color:rgba(255,255,255,0.7); }
+  .tray-badge { display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:6px 14px; font-size:0.72rem; color:rgba(255,255,255,0.7); }
 
-  /* HUD frame corners */
-  .hud-corner {
-    position: fixed;
-    width: 28px; height: 28px;
-    border-color: rgba(0,229,255,0.7);
-    border-style: solid;
-    z-index: 5;
-    pointer-events: none;
-  }
-  .hud-tl { top: 60px; left: 16px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
-  .hud-tr { top: 60px; right: 16px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
-  .hud-bl { bottom: 100px; left: 16px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
-  .hud-br { bottom: 100px; right: 16px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+  #startScreen { position:fixed; inset:0; background:#080c10; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; padding:2rem; text-align:center; }
+  .start-icon { font-size:4rem; margin-bottom:1.5rem; }
+  .start-title { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; margin-bottom:0.5rem; }
+  .start-sub { font-size:0.85rem; color:rgba(255,255,255,0.5); margin-bottom:2rem; line-height:1.6; }
+  .start-btn { background:#00e5ff; color:#080c10; border:none; border-radius:16px; padding:1rem 2.5rem; font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; }
 
-  /* Top bar */
-  .top-bar {
-    position: fixed; top: 0; left: 0; right: 0;
-    padding: 0.8rem 1.2rem;
-    display: flex; align-items: center; justify-content: space-between;
-    z-index: 10;
-    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
-  }
-  .back-btn {
-    color: rgba(255,255,255,0.8); text-decoration: none;
-    font-size: 1.3rem; width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.4); border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.15);
-  }
-  .top-info {
-    display: flex; flex-direction: column; align-items: center;
-  }
-  .top-title {
-    font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700;
-    color: var(--accent); letter-spacing: 1px;
-  }
-  .top-sub { font-size: 0.65rem; color: rgba(255,255,255,0.5); }
+  #detailPanel { position:fixed; bottom:0; left:0; right:0; background:rgba(8,12,16,0.97); border-top:1px solid rgba(0,229,255,0.2); border-radius:24px 24px 0 0; padding:1.5rem; z-index:20; transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.34,1.1,0.64,1); }
+  #detailPanel.open { transform:translateY(0); }
+  .panel-handle { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 1.2rem; }
+  .panel-avatar { width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid rgba(0,229,255,0.4); margin-bottom:0.8rem; }
+  .panel-avatar-ph { width:56px; height:56px; border-radius:50%; background:rgba(0,229,255,0.15); border:2px solid rgba(0,229,255,0.3); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:0.8rem; }
+  .panel-name { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; }
+  .panel-role { font-size:0.85rem; color:rgba(255,255,255,0.5); margin-bottom:1.2rem; }
+  .panel-links { display:flex; flex-direction:column; gap:0.6rem; }
+  .panel-link { display:flex; align-items:center; gap:0.8rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:0.8rem 1rem; color:#fff; text-decoration:none; font-size:0.85rem; transition:background 0.15s; }
+  .panel-link:hover { background:rgba(0,229,255,0.08); }
+  .panel-close { position:absolute; top:1.2rem; left:1.2rem; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.08); border:none; color:#fff; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
-  .active-count {
-    background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3);
-    border-radius: 20px; padding: 4px 12px;
-    font-size: 0.7rem; color: var(--accent);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .active-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: #00e5a0; animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%,100% { opacity:1; } 50% { opacity:0.3; }
-  }
-
-  /* Scan line animation */
-  .scan-line {
-    position: fixed; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.6), transparent);
-    animation: scanDown 3s linear infinite;
-    z-index: 4; pointer-events: none;
-  }
-  @keyframes scanDown {
-    0% { top: 60px; opacity: 0; }
-    5% { opacity: 1; }
-    95% { opacity: 1; }
-    100% { top: calc(100vh - 100px); opacity: 0; }
-  }
-
-  /* Bubble cards overlaid on persons */
-  .bubble-card {
-    position: fixed;
-    background: rgba(8,12,16,0.75);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(0,229,255,0.35);
-    border-radius: 18px;
-    padding: 10px 14px;
-    min-width: 160px;
-    max-width: 200px;
-    z-index: 8;
-    pointer-events: auto;
-    transition: all 0.3s;
-    animation: bubbleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @keyframes bubbleIn {
-    0% { transform: scale(0.5) translateY(20px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
-  }
-  .bubble-tail {
-    position: absolute;
-    bottom: -8px; left: 50%;
-    transform: translateX(-50%);
-    width: 1px; height: 8px;
-    background: rgba(0,229,255,0.4);
-  }
-  .bubble-dot {
-    position: absolute;
-    bottom: -12px; left: 50%;
-    transform: translateX(-50%);
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: rgba(0,229,255,0.5);
-  }
-  .bubble-ring {
-    position: absolute;
-    bottom: -20px; left: 50%;
-    transform: translateX(-50%);
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,229,255,0.3);
-    animation: ringPulse 2s ease-out infinite;
-  }
-  @keyframes ringPulse {
-    0% { width:12px; height:12px; opacity:0.6; bottom:-20px; left:50%; transform:translateX(-50%); }
-    100% { width:40px; height:40px; opacity:0; bottom:-34px; left:50%; transform:translateX(-50%); }
-  }
-
-  .bubble-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
-    object-fit: cover; float: right; margin-right: 0; margin-left: 8px;
-    border: 1.5px solid rgba(0,229,255,0.4);
-  }
-  .bubble-avatar-placeholder {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(0,229,255,0.15); border: 1.5px solid rgba(0,229,255,0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; float: right; margin-left: 8px;
-  }
-  .bubble-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem; font-weight: 700;
-    color: #fff; margin-bottom: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .bubble-role {
-    font-size: 0.68rem; color: rgba(255,255,255,0.55);
-    margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .bubble-socials { display: flex; gap: 4px; flex-wrap: wrap; clear: both; }
-  .bubble-social-pill {
-    background: rgba(255,255,255,0.1);
-    border-radius: 6px; padding: 2px 7px;
-    font-size: 0.65rem; color: rgba(255,255,255,0.7);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .bubble-social-pill:hover { background: rgba(0,229,255,0.2); }
-  .bubble-mode-badge {
-    position: absolute; top: -8px; right: 12px;
-    background: rgba(0,0,0,0.8); border: 1px solid rgba(0,229,255,0.4);
-    border-radius: 8px; padding: 1px 7px;
-    font-size: 0.6rem; color: var(--accent);
-  }
-
-  /* Bottom tray */
-  .bottom-tray {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    padding: 0.8rem 1.2rem 1.4rem;
-    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%);
-    z-index: 10;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .tray-info { font-size: 0.7rem; color: rgba(255,255,255,0.4); }
-  .tray-info b { color: rgba(255,255,255,0.7); }
-  .tray-scan-badge {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px; padding: 6px 14px;
-    font-size: 0.72rem; color: rgba(255,255,255,0.7);
-    animation: fadeInOut 3s ease infinite;
-  }
-  @keyframes fadeInOut {
-    0%,100% { opacity:0.6; } 50% { opacity:1; }
-  }
-
-  /* Start screen */
-  #startScreen {
-    position: fixed; inset: 0;
-    background: #080c10;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 100; padding: 2rem;
-    text-align: center;
-  }
-  .start-icon { font-size: 4rem; margin-bottom: 1.5rem; }
-  .start-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-  .start-sub { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 2rem; line-height: 1.6; }
-  .start-btn {
-    background: var(--accent); color: #080c10;
-    border: none; border-radius: 16px;
-    padding: 1rem 2.5rem;
-    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0,229,255,0.3);
-  }
-
-  /* Detail panel */
-  #detailPanel {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(8,12,16,0.97);
-    border-top: 1px solid rgba(0,229,255,0.2);
-    border-radius: 24px 24px 0 0;
-    padding: 1.5rem;
-    z-index: 20;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.34, 1.1, 0.64, 1);
-  }
-  #detailPanel.open { transform: translateY(0); }
-  .panel-handle {
-    width: 36px; height: 4px; border-radius: 2px;
-    background: rgba(255,255,255,0.2);
-    margin: 0 auto 1.2rem;
-  }
-  .panel-name { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
-  .panel-role { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 1.2rem; }
-  .panel-links { display: flex; flex-direction: column; gap: 0.6rem; }
-  .panel-link {
-    display: flex; align-items: center; gap: 0.8rem;
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px; padding: 0.8rem 1rem;
-    color: #fff; text-decoration: none; font-size: 0.85rem;
-    transition: background 0.15s;
-  }
-  .panel-link:hover { background: rgba(0,229,255,0.08); }
-  .panel-close {
-    position: absolute; top: 1.2rem; left: 1.2rem;
-    width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(255,255,255,0.08); border: none; color: #fff;
-    font-size: 1rem; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .firebase-badge { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); border:1px solid rgba(0,229,255,0.3); border-radius:16px; padding:1rem 1.5rem; z-index:50; text-align:center; font-size:0.85rem; display:none; }
 </style>
 </head>
 <body>
@@ -275,10 +71,7 @@
 <div id="startScreen">
   <div class="start-icon">📷</div>
   <div class="start-title">סרוק את הסביבה</div>
-  <div class="start-sub">
-    האפליקציה תפעיל את המצלמה ותחפש<br>
-    אנשים עם בועות פתוחות בסביבתך
-  </div>
+  <div class="start-sub">האפליקציה תפתח את המצלמה ותחפש<br>בועות פעילות בסביבתך בזמן אמת</div>
   <button class="start-btn" onclick="startScanner()">הפעל מצלמה</button>
 </div>
 
@@ -295,7 +88,7 @@
   <a href="index.html" class="back-btn">←</a>
   <div class="top-info">
     <div class="top-title">BUBBLE AR</div>
-    <div class="top-sub" id="scanStatus">מחפש בועות...</div>
+    <div class="top-sub" id="scanStatus">מאתחל...</div>
   </div>
   <div class="active-count">
     <div class="active-dot"></div>
@@ -304,283 +97,193 @@
 </div>
 
 <div class="bottom-tray">
-  <div class="tray-info">ISO 3200 · f/2.0 · <b>LIVE</b></div>
-  <div class="tray-scan-badge">⬡ סורק · BUBBLE AR</div>
+  <div class="tray-info">Firebase · <b>LIVE</b></div>
+  <div class="tray-badge">⬡ סורק · BUBBLE AR</div>
 </div>
 
 <div id="detailPanel">
   <button class="panel-close" onclick="closeDetail()">✕</button>
   <div class="panel-handle"></div>
+  <div id="detailAvatar"></div>
   <div class="panel-name" id="detailName"></div>
   <div class="panel-role" id="detailRole"></div>
   <div class="panel-links" id="detailLinks"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getDatabase, ref, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const app = initializeApp({ databaseURL: "https://bubbles-a04a5-default-rtdb.europe-west1.firebasedatabase.app" });
+const db = getDatabase(app);
+
 let activeBubbles = {};
-let detailProfile = null;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-async function startScanner() {
+window.startScanner = async () => {
   document.getElementById('startScreen').style.display = 'none';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } });
     document.getElementById('video').srcObject = stream;
-    document.getElementById('scanStatus').textContent = 'מצלמה פעילה · סורק...';
+    document.getElementById('scanStatus').textContent = 'מחובר · מאזין לבועות...';
   } catch(e) {
-    document.getElementById('scanStatus').textContent = 'שגיאה: ' + e.message;
+    document.getElementById('scanStatus').textContent = 'שגיאת מצלמה: ' + e.message;
     document.getElementById('startScreen').style.display = 'flex';
+    return;
   }
 
-  startBLEScanning();
+  startFirebaseListener();
   startARLoop();
-}
+};
 
-function startBLEScanning() {
-  // Listen for BroadcastChannel messages (same-device simulation)
-  const channel = new BroadcastChannel('bubble_ble');
-  channel.onmessage = (e) => {
-    const { type, profile } = e.data;
-    if (type === 'BUBBLE_ADVERTISE' && profile) {
-      receivedProfile(profile);
-    } else if (type === 'BUBBLE_OFF') {
-      removeProfile(e.data.id);
-    }
-  };
+function startFirebaseListener() {
+  const bubblesRef = ref(db, 'bubbles');
+  onValue(bubblesRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    const now = Date.now();
 
-  // Also scan localStorage for active profiles (works across tabs/pages)
-  setInterval(() => {
-    scanLocalProfiles();
-  }, 1500);
+    // Remove stale bubbles
+    Object.keys(activeBubbles).forEach(id => {
+      if (!data[id]) removeBubble(id);
+    });
 
-  // Simulate discovering nearby profiles for demo
-  setTimeout(() => {
-    if (Object.keys(activeBubbles).length === 0) {
-      injectDemoProfiles();
-    }
-  }, 2500);
-}
+    // Add/update bubbles
+    Object.entries(data).forEach(([id, profile]) => {
+      if (now - profile.timestamp > 20000) { removeBubble(id); return; }
+      if (!activeBubbles[id]) {
+        activeBubbles[id] = {
+          profile,
+          x: 0.15 + Math.random() * 0.7,
+          y: 0.15 + Math.random() * 0.5,
+          floatOffset: Math.random() * Math.PI * 2,
+          scale: 0.65 + Math.random() * 0.35
+        };
+        createBubbleCard(profile, activeBubbles[id]);
+      } else {
+        activeBubbles[id].profile = profile;
+        refreshBubbleCard(id, profile);
+      }
+    });
 
-function scanLocalProfiles() {
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('bubble_profile_')) {
-      try {
-        const profile = JSON.parse(localStorage.getItem(key));
-        if (profile && Date.now() - profile.timestamp < 15000) {
-          receivedProfile(profile);
-        } else if (profile) {
-          removeProfile(profile.id);
-          localStorage.removeItem(key);
-        }
-      } catch(e) {}
-    }
-  }
-
-  document.getElementById('activeCount').textContent = Object.keys(activeBubbles).length;
-}
-
-function receivedProfile(profile) {
-  if (!profile.id) return;
-  const isNew = !activeBubbles[profile.id];
-  if (!activeBubbles[profile.id]) {
-    activeBubbles[profile.id] = {
-      profile,
-      x: 0.2 + Math.random() * 0.6,
-      y: 0.2 + Math.random() * 0.5,
-      floatOffset: Math.random() * Math.PI * 2,
-      scale: 0.7 + Math.random() * 0.3
-    };
-    createBubbleCard(profile, activeBubbles[profile.id]);
-  } else {
-    activeBubbles[profile.id].profile = profile;
-  }
-  document.getElementById('activeCount').textContent = Object.keys(activeBubbles).length;
-  document.getElementById('scanStatus').textContent = Object.keys(activeBubbles).length + ' בועות זוהו בסביבה';
-}
-
-function removeProfile(id) {
-  if (activeBubbles[id]) {
-    const el = document.getElementById('bubble_' + id);
-    if (el) el.remove();
-    delete activeBubbles[id];
-  }
+    const count = Object.keys(activeBubbles).length;
+    document.getElementById('activeCount').textContent = count;
+    document.getElementById('scanStatus').textContent = count > 0
+      ? count + ' בועות פעילות בסביבה'
+      : 'מחפש בועות... (ודא שמישהו שידר)';
+  });
 }
 
 function createBubbleCard(profile, state) {
-  const existing = document.getElementById('bubble_' + profile.id);
-  if (existing) existing.remove();
-
   const card = document.createElement('div');
   card.className = 'bubble-card';
   card.id = 'bubble_' + profile.id;
-  card.onclick = () => openDetail(profile);
-
-  const modeLabels = { networking: 'נטוורקינג', social: 'חברתי', dating: 'היכרויות' };
-  const modeLabel = modeLabels[profile.mode] || '';
-
-  let avatarHtml = '';
-  if (profile.avatar) {
-    avatarHtml = `<img src="${profile.avatar}" class="bubble-avatar" style="float:right;margin-left:8px;">`;
-  } else {
-    avatarHtml = `<div class="bubble-avatar-placeholder" style="float:right;margin-left:8px;">👤</div>`;
-  }
-
-  const socials = profile.socials || {};
-  let socialHtml = '';
-  if (socials.linkedin) socialHtml += '<span class="bubble-social-pill">in</span>';
-  if (socials.instagram) socialHtml += '<span class="bubble-social-pill">ig</span>';
-  if (socials.twitter) socialHtml += '<span class="bubble-social-pill">𝕏</span>';
-  if (socials.github) socialHtml += '<span class="bubble-social-pill">gh</span>';
-
-  const roleLine = [profile.role, profile.company].filter(Boolean).join(' · ');
-
-  card.innerHTML = `
-    <div class="bubble-mode-badge">${modeLabel}</div>
-    ${avatarHtml}
-    <div class="bubble-name">${profile.name || 'Unknown'}</div>
-    <div class="bubble-role">${roleLine || ''}</div>
-    <div class="bubble-socials" style="clear:both">${socialHtml}</div>
-    <div class="bubble-tail"></div>
-    <div class="bubble-dot"></div>
-    <div class="bubble-ring"></div>
-  `;
-
+  card.onclick = () => window.openDetail(profile);
+  card.innerHTML = buildBubbleHTML(profile);
   document.body.appendChild(card);
-  updateBubblePosition(card, state);
+  positionBubble(card, state);
 }
 
-function updateBubblePosition(card, state) {
+function refreshBubbleCard(id, profile) {
+  const card = document.getElementById('bubble_' + id);
+  if (card) card.innerHTML = buildBubbleHTML(profile);
+}
+
+function buildBubbleHTML(profile) {
+  const modeLabels = { networking:'נטוורקינג', social:'חברתי', dating:'היכרויות' };
+  const avatarHtml = profile.avatar
+    ? `<img src="${profile.avatar}" class="bubble-avatar">`
+    : `<div class="bubble-avatar-ph">👤</div>`;
+  const s = profile.socials || {};
+  let pills = '';
+  if (s.linkedin) pills += '<span class="bubble-pill">in</span>';
+  if (s.instagram) pills += '<span class="bubble-pill">ig</span>';
+  if (s.twitter) pills += '<span class="bubble-pill">𝕏</span>';
+  if (s.github) pills += '<span class="bubble-pill">gh</span>';
+  const role = [profile.role, profile.company].filter(Boolean).join(' · ');
+  return `
+    <div class="bubble-mode">${modeLabels[profile.mode] || ''}</div>
+    ${avatarHtml}
+    <div class="bubble-name">${profile.name || 'אנונימי'}</div>
+    <div class="bubble-role">${role}</div>
+    <div class="bubble-socials">${pills}</div>
+    <div class="bubble-tail"></div>
+    <div class="bubble-dot"></div>
+    <div class="bubble-ring"></div>`;
+}
+
+function removeBubble(id) {
+  const el = document.getElementById('bubble_' + id);
+  if (el) { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; setTimeout(() => el.remove(), 300); }
+  delete activeBubbles[id];
+  document.getElementById('activeCount').textContent = Object.keys(activeBubbles).length;
+}
+
+function positionBubble(card, state) {
   const t = Date.now() / 1000;
-  const floatY = Math.sin(t + state.floatOffset) * 6;
+  const fy = Math.sin(t + state.floatOffset) * 6;
   const x = state.x * window.innerWidth;
-  const y = state.y * window.innerHeight + floatY;
-
-  const cardW = card.offsetWidth || 180;
-  const cardH = card.offsetHeight || 100;
-  const clampedX = Math.max(10, Math.min(window.innerWidth - cardW - 10, x - cardW / 2));
-  const clampedY = Math.max(65, Math.min(window.innerHeight - cardH - 110, y - cardH));
-
-  card.style.left = clampedX + 'px';
-  card.style.top = clampedY + 'px';
-
-  // Scale by simulated distance
-  const s = state.scale;
-  card.style.transform = `scale(${s})`;
+  const y = state.y * window.innerHeight + fy;
+  const w = card.offsetWidth || 170;
+  const h = card.offsetHeight || 100;
+  card.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x - w/2)) + 'px';
+  card.style.top = Math.max(65, Math.min(window.innerHeight - h - 110, y - h)) + 'px';
+  card.style.transform = `scale(${state.scale})`;
   card.style.transformOrigin = 'bottom center';
-  card.style.opacity = 0.5 + s * 0.5;
+  card.style.opacity = 0.45 + state.scale * 0.55;
 }
 
 function startARLoop() {
-  function loop() {
+  const loop = () => {
     Object.entries(activeBubbles).forEach(([id, state]) => {
       const card = document.getElementById('bubble_' + id);
-      if (card) updateBubblePosition(card, state);
+      if (card) positionBubble(card, state);
+    });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    Object.values(activeBubbles).forEach(state => {
+      const x = state.x * canvas.width;
+      const y = (state.y + 0.1) * canvas.height;
+      ctx.beginPath(); ctx.arc(x, y, 4 * state.scale, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,229,255,${0.35 * state.scale})`; ctx.fill();
     });
     requestAnimationFrame(loop);
-  }
+  };
   loop();
-
-  // Draw anchor points on canvas
-  function drawAnchors() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    Object.entries(activeBubbles).forEach(([id, state]) => {
-      const x = state.x * canvas.width;
-      const y = (state.y + 0.12) * canvas.height;
-      ctx.beginPath();
-      ctx.arc(x, y, 4 * state.scale, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,229,255,${0.4 * state.scale})`;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x, y, 12 * state.scale, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(0,229,255,${0.15 * state.scale})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
-    requestAnimationFrame(drawAnchors);
-  }
-  drawAnchors();
 }
 
-function injectDemoProfiles() {
-  const demos = [
-    {
-      id: 'demo_001',
-      name: 'Noa Levi',
-      role: 'UX Designer',
-      company: 'Wix',
-      mode: 'networking',
-      socials: { linkedin: 'noalevi', instagram: '@noalevi' },
-      avatar: null,
-      timestamp: Date.now()
-    },
-    {
-      id: 'demo_002',
-      name: 'Amir Cohen',
-      role: 'Full Stack Dev',
-      company: 'Startup',
-      mode: 'networking',
-      socials: { linkedin: 'amircohen', github: 'amir-c' },
-      avatar: null,
-      timestamp: Date.now()
-    }
-  ];
-  demos.forEach(p => receivedProfile(p));
-
-  document.getElementById('scanStatus').textContent = 'מצב הדגמה · 2 בועות פעילות';
-}
-
-function openDetail(profile) {
-  detailProfile = profile;
+window.openDetail = (profile) => {
+  const s = profile.socials || {};
+  const avatarEl = document.getElementById('detailAvatar');
+  avatarEl.innerHTML = profile.avatar
+    ? `<img src="${profile.avatar}" class="panel-avatar">`
+    : `<div class="panel-avatar-ph">👤</div>`;
   document.getElementById('detailName').textContent = profile.name;
-  document.getElementById('detailRole').textContent =
-    [profile.role, profile.company].filter(Boolean).join(' · ') || '';
-
+  document.getElementById('detailRole').textContent = [profile.role, profile.company].filter(Boolean).join(' · ');
   const links = document.getElementById('detailLinks');
   links.innerHTML = '';
-  const s = profile.socials || {};
-
-  const items = [
-    { key: 'linkedin', label: 'LinkedIn', icon: 'in', url: s.linkedin ? 'https://linkedin.com/in/' + s.linkedin : null },
-    { key: 'instagram', label: 'Instagram', icon: '📷', url: s.instagram ? 'https://instagram.com/' + s.instagram.replace('@','') : null },
-    { key: 'twitter', label: 'Twitter / X', icon: '𝕏', url: s.twitter ? 'https://twitter.com/' + s.twitter.replace('@','') : null },
-    { key: 'github', label: 'GitHub', icon: '⌥', url: s.github ? 'https://github.com/' + s.github : null },
-  ];
-
-  items.forEach(item => {
+  [
+    { key:'linkedin', label:'LinkedIn', icon:'in', base:'https://linkedin.com/in/' },
+    { key:'instagram', label:'Instagram', icon:'📷', base:'https://instagram.com/' },
+    { key:'twitter', label:'Twitter / X', icon:'𝕏', base:'https://twitter.com/' },
+    { key:'github', label:'GitHub', icon:'⌥', base:'https://github.com/' },
+  ].forEach(item => {
     if (s[item.key]) {
       const a = document.createElement('a');
-      a.href = item.url || '#';
-      a.className = 'panel-link';
-      a.target = '_blank';
-      a.innerHTML = `<span style="font-size:1.1rem;width:24px;text-align:center">${item.icon}</span> ${item.label} <span style="margin-right:auto;font-size:0.75rem;color:rgba(255,255,255,0.35)">${s[item.key]}</span>`;
+      a.href = item.base + s[item.key].replace('@','');
+      a.className = 'panel-link'; a.target = '_blank';
+      a.innerHTML = `<span style="width:24px;text-align:center">${item.icon}</span> ${item.label} <span style="margin-right:auto;font-size:0.75rem;color:rgba(255,255,255,0.35)">${s[item.key]}</span>`;
       links.appendChild(a);
     }
   });
-
-  if (links.children.length === 0) {
-    links.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:0.8rem;text-align:center;padding:1rem">אין קישורים זמינים</p>';
-  }
-
+  if (!links.children.length) links.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:0.8rem;text-align:center;padding:1rem">אין קישורים</p>';
   document.getElementById('detailPanel').classList.add('open');
-}
+};
 
-function closeDetail() {
-  document.getElementById('detailPanel').classList.remove('open');
-}
-
-// Close detail on backdrop tap
-document.getElementById('canvas').addEventListener('click', closeDetail);
+window.closeDetail = () => document.getElementById('detailPanel').classList.remove('open');
 </script>
 </body>
 </html>
