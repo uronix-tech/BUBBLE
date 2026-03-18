@@ -10,24 +10,42 @@
   body { background: #000; color: #fff; font-family: 'DM Sans', sans-serif; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
   #video { position: fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; }
   #canvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+
   .hud-corner { position:fixed; width:28px; height:28px; border-color:rgba(0,229,255,0.7); border-style:solid; z-index:5; pointer-events:none; }
   .hud-tl { top:60px; left:16px; border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
   .hud-tr { top:60px; right:16px; border-width:2px 2px 0 0; border-radius:0 4px 0 0; }
   .hud-bl { bottom:100px; left:16px; border-width:0 0 2px 2px; border-radius:0 0 0 4px; }
   .hud-br { bottom:100px; right:16px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+
   .scan-line { position:fixed; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, rgba(0,229,255,0.6), transparent); animation:scanDown 3s linear infinite; z-index:4; pointer-events:none; }
   @keyframes scanDown { 0%{top:60px;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:calc(100vh - 100px);opacity:0} }
-  .top-bar { position:fixed; top:0; left:0; right:0; padding:0.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; z-index:10; background:linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); }
+
+  .top-bar { position:fixed; top:0; left:0; right:0; padding:0.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; z-index:10; background:linear-gradient(180deg, rgba(0,0,0,0.75) 0%, transparent 100%); }
   .back-btn { color:rgba(255,255,255,0.8); text-decoration:none; font-size:1.3rem; width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); border-radius:50%; border:1px solid rgba(255,255,255,0.15); }
   .top-info { display:flex; flex-direction:column; align-items:center; }
   .top-title { font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700; color:#00e5ff; letter-spacing:1px; }
-  .top-sub { font-size:0.65rem; color:rgba(255,255,255,0.5); }
+  .top-sub { font-size:0.62rem; color:rgba(255,255,255,0.5); margin-top:1px; }
   .active-count { background:rgba(0,0,0,0.5); border:1px solid rgba(0,229,255,0.3); border-radius:20px; padding:4px 12px; font-size:0.7rem; color:#00e5ff; display:flex; align-items:center; gap:6px; }
   .active-dot { width:5px; height:5px; border-radius:50%; background:#00e5a0; animation:blink 2s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  .bubble-card { position:fixed; background:rgba(8,12,16,0.82); backdrop-filter:blur(16px); border:1px solid rgba(0,229,255,0.35); border-radius:18px; padding:10px 14px; min-width:155px; max-width:195px; z-index:8; pointer-events:auto; animation:bubbleIn 0.4s cubic-bezier(0.34,1.56,0.64,1); cursor:pointer; }
-  @keyframes bubbleIn { 0%{transform:scale(0.5) translateY(20px);opacity:0} 100%{transform:scale(1) translateY(0);opacity:1} }
+  /* Compass bar */
+  .compass-bar { position:fixed; top:58px; left:0; right:0; height:28px; z-index:9; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  .compass-inner { position:relative; width:100%; height:100%; overflow:hidden; }
+  .compass-track { position:absolute; top:0; height:100%; display:flex; align-items:center; white-space:nowrap; transition:transform 0.1s linear; }
+  .compass-tick { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:18px; font-size:0.5rem; color:rgba(255,255,255,0.3); }
+  .compass-tick.major { color:rgba(255,255,255,0.7); font-size:0.6rem; font-weight:600; }
+  .compass-tick.cardinal { color:#00e5ff; font-size:0.65rem; font-weight:700; }
+  .compass-tick .tick-line { width:1px; height:6px; background:currentColor; margin-bottom:2px; }
+  .compass-tick.major .tick-line { height:10px; }
+  .compass-center { position:absolute; top:0; left:50%; transform:translateX(-50%); width:2px; height:100%; background:rgba(0,229,255,0.8); }
+  .compass-triangle { position:absolute; top:0; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid #00e5ff; }
+
+  /* Bubble cards */
+  .bubble-card { position:fixed; background:rgba(8,12,16,0.85); backdrop-filter:blur(16px); border:1px solid rgba(0,229,255,0.4); border-radius:18px; padding:10px 14px; min-width:155px; max-width:195px; z-index:8; pointer-events:auto; cursor:pointer; transition:opacity 0.4s, transform 0.4s; }
+  .bubble-card.entering { animation:bubbleIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes bubbleIn { 0%{transform:scale(0.4) translateY(30px);opacity:0} 100%{transform:scale(1) translateY(0);opacity:1} }
+  .bubble-card.hidden { opacity:0 !important; pointer-events:none; transform:scale(0.7) translateY(10px) !important; }
   .bubble-tail { position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:1px; height:8px; background:rgba(0,229,255,0.4); }
   .bubble-dot { position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:rgba(0,229,255,0.5); }
   .bubble-ring { position:absolute; border-radius:50%; border:1px solid rgba(0,229,255,0.3); animation:ringPulse 2.5s ease-out infinite; }
@@ -39,17 +57,24 @@
   .bubble-socials { display:flex; gap:4px; flex-wrap:wrap; clear:both; }
   .bubble-pill { background:rgba(255,255,255,0.1); border-radius:6px; padding:2px 7px; font-size:0.62rem; color:rgba(255,255,255,0.7); }
   .bubble-mode { position:absolute; top:-8px; right:10px; background:rgba(0,0,0,0.85); border:1px solid rgba(0,229,255,0.4); border-radius:8px; padding:1px 7px; font-size:0.58rem; color:#00e5ff; }
+  .bubble-dist { position:absolute; top:-8px; left:10px; background:rgba(0,0,0,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:1px 7px; font-size:0.58rem; color:rgba(255,255,255,0.5); }
+
+  /* Direction arrow when bubble is out of view */
+  .direction-arrow { position:fixed; z-index:9; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:3px; transition:all 0.3s; }
+  .direction-arrow .arrow-icon { font-size:1.2rem; filter:drop-shadow(0 0 4px rgba(0,229,255,0.8)); }
+  .direction-arrow .arrow-name { font-size:0.6rem; color:#00e5ff; font-family:'Syne',sans-serif; font-weight:700; background:rgba(0,0,0,0.6); border-radius:6px; padding:1px 6px; }
 
   .bottom-tray { position:fixed; bottom:0; left:0; right:0; padding:0.8rem 1.2rem 1.4rem; background:linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index:10; display:flex; align-items:center; justify-content:space-between; }
-  .tray-info { font-size:0.7rem; color:rgba(255,255,255,0.4); }
+  .tray-info { font-size:0.68rem; color:rgba(255,255,255,0.4); line-height:1.5; }
   .tray-info b { color:rgba(255,255,255,0.7); }
   .tray-badge { display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:6px 14px; font-size:0.72rem; color:rgba(255,255,255,0.7); }
 
   #startScreen { position:fixed; inset:0; background:#080c10; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; padding:2rem; text-align:center; }
-  .start-icon { font-size:4rem; margin-bottom:1.5rem; }
-  .start-title { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; margin-bottom:0.5rem; }
-  .start-sub { font-size:0.85rem; color:rgba(255,255,255,0.5); margin-bottom:2rem; line-height:1.6; }
+  .start-icon { font-size:3.5rem; margin-bottom:1.2rem; }
+  .start-title { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; margin-bottom:0.5rem; }
+  .start-sub { font-size:0.82rem; color:rgba(255,255,255,0.5); margin-bottom:2rem; line-height:1.7; }
   .start-btn { background:#00e5ff; color:#080c10; border:none; border-radius:16px; padding:1rem 2.5rem; font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; }
+  .start-note { font-size:0.72rem; color:rgba(255,255,255,0.3); margin-top:1rem; line-height:1.5; }
 
   #detailPanel { position:fixed; bottom:0; left:0; right:0; background:rgba(8,12,16,0.97); border-top:1px solid rgba(0,229,255,0.2); border-radius:24px 24px 0 0; padding:1.5rem; z-index:20; transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.34,1.1,0.64,1); }
   #detailPanel.open { transform:translateY(0); }
@@ -59,20 +84,22 @@
   .panel-name { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; }
   .panel-role { font-size:0.85rem; color:rgba(255,255,255,0.5); margin-bottom:1.2rem; }
   .panel-links { display:flex; flex-direction:column; gap:0.6rem; }
-  .panel-link { display:flex; align-items:center; gap:0.8rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:0.8rem 1rem; color:#fff; text-decoration:none; font-size:0.85rem; transition:background 0.15s; }
-  .panel-link:hover { background:rgba(0,229,255,0.08); }
+  .panel-link { display:flex; align-items:center; gap:0.8rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:0.8rem 1rem; color:#fff; text-decoration:none; font-size:0.85rem; }
   .panel-close { position:absolute; top:1.2rem; left:1.2rem; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.08); border:none; color:#fff; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-
-  .firebase-badge { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); border:1px solid rgba(0,229,255,0.3); border-radius:16px; padding:1rem 1.5rem; z-index:50; text-align:center; font-size:0.85rem; display:none; }
 </style>
 </head>
 <body>
 
 <div id="startScreen">
-  <div class="start-icon">📷</div>
+  <div class="start-icon">📡</div>
   <div class="start-title">סרוק את הסביבה</div>
-  <div class="start-sub">האפליקציה תפתח את המצלמה ותחפש<br>בועות פעילות בסביבתך בזמן אמת</div>
-  <button class="start-btn" onclick="startScanner()">הפעל מצלמה</button>
+  <div class="start-sub">
+    האפליקציה תבקש גישה למצלמה, GPS ומצפן.<br>
+    כוון את הטלפון לכיוון אדם עם בועה פתוחה<br>
+    ותראה את הבועה שלו מופיעה על המסך!
+  </div>
+  <button class="start-btn" onclick="startScanner()">הפעל סריקה</button>
+  <div class="start-note">דורש Chrome על Android או iPhone עם הרשאות מיקום</div>
 </div>
 
 <video id="video" autoplay muted playsinline></video>
@@ -83,6 +110,15 @@
 <div class="hud-corner hud-bl"></div>
 <div class="hud-corner hud-br"></div>
 <div class="scan-line"></div>
+
+<!-- Compass bar -->
+<div class="compass-bar">
+  <div class="compass-inner">
+    <div class="compass-track" id="compassTrack"></div>
+    <div class="compass-center"></div>
+    <div class="compass-triangle"></div>
+  </div>
+</div>
 
 <div class="top-bar">
   <a href="index.html" class="back-btn">←</a>
@@ -97,8 +133,8 @@
 </div>
 
 <div class="bottom-tray">
-  <div class="tray-info">Firebase · <b>LIVE</b></div>
-  <div class="tray-badge">⬡ סורק · BUBBLE AR</div>
+  <div class="tray-info" id="sensorInfo">GPS: ממתין · מצפן: ממתין</div>
+  <div class="tray-badge">⬡ AR · LIVE</div>
 </div>
 
 <div id="detailPanel">
@@ -112,88 +148,184 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 const app = initializeApp({ databaseURL: "https://bubbles-a04a5-default-rtdb.europe-west1.firebasedatabase.app" });
 const db = getDatabase(app);
 
+// State
+let myLat = null, myLng = null;
+let myHeading = null; // degrees from north, 0=north, 90=east
 let activeBubbles = {};
+const HFOV = 60; // horizontal field of view in degrees
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
 function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-window.startScanner = async () => {
-  document.getElementById('startScreen').style.display = 'none';
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } });
-    document.getElementById('video').srcObject = stream;
-    document.getElementById('scanStatus').textContent = 'מחובר · מאזין לבועות...';
-  } catch(e) {
-    document.getElementById('scanStatus').textContent = 'שגיאת מצלמה: ' + e.message;
-    document.getElementById('startScreen').style.display = 'flex';
-    return;
+// Build compass
+function buildCompass() {
+  const track = document.getElementById('compassTrack');
+  const labels = { 0:'N', 45:'NE', 90:'E', 135:'SE', 180:'S', 225:'SW', 270:'W', 315:'NW', 360:'N' };
+  let html = '';
+  // repeat 3x for seamless wrap
+  for (let rep = 0; rep < 3; rep++) {
+    for (let i = 0; i <= 360; i += 5) {
+      const isMajor = i % 45 === 0;
+      const isCardinal = labels[i] && ['N','E','S','W'].includes(labels[i]);
+      const cls = isCardinal ? 'cardinal' : isMajor ? 'major' : '';
+      const label = labels[i] || '';
+      html += `<div class="compass-tick ${cls}"><div class="tick-line"></div>${label}</div>`;
+    }
   }
+  track.innerHTML = html;
+}
+buildCompass();
 
-  startFirebaseListener();
-  startARLoop();
-};
+function updateCompass(heading) {
+  const track = document.getElementById('compassTrack');
+  const totalTicks = 73; // 360/5 + 1
+  const tickWidth = 18;
+  const totalWidth = totalTicks * tickWidth;
+  // offset so current heading is centered
+  const offset = -(heading / 360) * totalWidth - (totalWidth) + (window.innerWidth / 2);
+  track.style.transform = `translateX(${offset % totalWidth}px)`;
+}
 
+// GPS
+function startGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(
+    (pos) => {
+      myLat = pos.coords.latitude;
+      myLng = pos.coords.longitude;
+      updateSensorInfo();
+    },
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 2000 }
+  );
+}
+
+// Compass / Device Orientation
+function startCompass() {
+  // iOS needs permission
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') listenOrientation();
+    }).catch(() => {});
+  } else {
+    listenOrientation();
+  }
+}
+
+function listenOrientation() {
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+
+function handleOrientation(e) {
+  let heading = null;
+  if (e.webkitCompassHeading !== undefined) {
+    heading = e.webkitCompassHeading; // iOS
+  } else if (e.absolute && e.alpha !== null) {
+    heading = (360 - e.alpha) % 360; // Android absolute
+  } else if (e.alpha !== null) {
+    heading = (360 - e.alpha) % 360; // fallback
+  }
+  if (heading !== null) {
+    myHeading = heading;
+    updateCompass(heading);
+    updateSensorInfo();
+  }
+}
+
+function updateSensorInfo() {
+  const gps = myLat ? `GPS: ${myLat.toFixed(4)},${myLng.toFixed(4)}` : 'GPS: ממתין';
+  const cmp = myHeading !== null ? `מצפן: ${Math.round(myHeading)}°` : 'מצפן: ממתין';
+  document.getElementById('sensorInfo').textContent = `${gps} · ${cmp}`;
+}
+
+// Haversine distance in meters
+function distanceTo(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Bearing from me to target (degrees from north)
+function bearingTo(lat1, lng1, lat2, lng2) {
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2 * Math.PI / 180);
+  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// Angle difference (-180 to 180)
+function angleDiff(a, b) {
+  let d = ((a - b) + 540) % 360 - 180;
+  return d;
+}
+
+// Firebase listener
 function startFirebaseListener() {
   const bubblesRef = ref(db, 'bubbles');
   onValue(bubblesRef, (snapshot) => {
     const data = snapshot.val() || {};
     const now = Date.now();
 
-    // Remove stale bubbles
     Object.keys(activeBubbles).forEach(id => {
       if (!data[id]) removeBubble(id);
     });
 
-    // Add/update bubbles
     Object.entries(data).forEach(([id, profile]) => {
       if (now - profile.timestamp > 20000) { removeBubble(id); return; }
       if (!activeBubbles[id]) {
         activeBubbles[id] = {
           profile,
+          // fallback position if no GPS
           x: 0.15 + Math.random() * 0.7,
-          y: 0.15 + Math.random() * 0.5,
+          y: 0.2 + Math.random() * 0.4,
           floatOffset: Math.random() * Math.PI * 2,
-          scale: 0.65 + Math.random() * 0.35
         };
         createBubbleCard(profile, activeBubbles[id]);
       } else {
         activeBubbles[id].profile = profile;
-        refreshBubbleCard(id, profile);
+        refreshCard(id, profile);
       }
     });
 
     const count = Object.keys(activeBubbles).length;
     document.getElementById('activeCount').textContent = count;
     document.getElementById('scanStatus').textContent = count > 0
-      ? count + ' בועות פעילות בסביבה'
-      : 'מחפש בועות... (ודא שמישהו שידר)';
+      ? count + ' בועות · כוון לכיוונן'
+      : 'מחפש בועות פעילות...';
   });
 }
 
 function createBubbleCard(profile, state) {
   const card = document.createElement('div');
-  card.className = 'bubble-card';
+  card.className = 'bubble-card entering';
   card.id = 'bubble_' + profile.id;
   card.onclick = () => window.openDetail(profile);
-  card.innerHTML = buildBubbleHTML(profile);
+  card.innerHTML = buildCardHTML(profile, 0);
   document.body.appendChild(card);
-  positionBubble(card, state);
+  setTimeout(() => card.classList.remove('entering'), 600);
 }
 
-function refreshBubbleCard(id, profile) {
+function refreshCard(id, profile) {
   const card = document.getElementById('bubble_' + id);
-  if (card) card.innerHTML = buildBubbleHTML(profile);
+  if (card) {
+    const dist = activeBubbles[id]._lastDist || 0;
+    card.innerHTML = buildCardHTML(profile, dist);
+  }
 }
 
-function buildBubbleHTML(profile) {
+function buildCardHTML(profile, dist) {
   const modeLabels = { networking:'נטוורקינג', social:'חברתי', dating:'היכרויות' };
   const avatarHtml = profile.avatar
     ? `<img src="${profile.avatar}" class="bubble-avatar">`
@@ -205,8 +337,10 @@ function buildBubbleHTML(profile) {
   if (s.twitter) pills += '<span class="bubble-pill">𝕏</span>';
   if (s.github) pills += '<span class="bubble-pill">gh</span>';
   const role = [profile.role, profile.company].filter(Boolean).join(' · ');
+  const distLabel = dist > 0 ? (dist < 1000 ? Math.round(dist)+'מ' : (dist/1000).toFixed(1)+'ק"מ') : '';
   return `
     <div class="bubble-mode">${modeLabels[profile.mode] || ''}</div>
+    ${distLabel ? `<div class="bubble-dist">${distLabel}</div>` : ''}
     ${avatarHtml}
     <div class="bubble-name">${profile.name || 'אנונימי'}</div>
     <div class="bubble-role">${role}</div>
@@ -218,47 +352,150 @@ function buildBubbleHTML(profile) {
 
 function removeBubble(id) {
   const el = document.getElementById('bubble_' + id);
-  if (el) { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; setTimeout(() => el.remove(), 300); }
+  if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }
+  // Remove direction arrow
+  const arr = document.getElementById('arrow_' + id);
+  if (arr) arr.remove();
   delete activeBubbles[id];
-  document.getElementById('activeCount').textContent = Object.keys(activeBubbles).length;
 }
 
-function positionBubble(card, state) {
-  const t = Date.now() / 1000;
-  const fy = Math.sin(t + state.floatOffset) * 6;
-  const x = state.x * window.innerWidth;
-  const y = state.y * window.innerHeight + fy;
-  const w = card.offsetWidth || 170;
-  const h = card.offsetHeight || 100;
-  card.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x - w/2)) + 'px';
-  card.style.top = Math.max(65, Math.min(window.innerHeight - h - 110, y - h)) + 'px';
-  card.style.transform = `scale(${state.scale})`;
-  card.style.transformOrigin = 'bottom center';
-  card.style.opacity = 0.45 + state.scale * 0.55;
-}
-
+// AR positioning loop
 function startARLoop() {
-  const loop = () => {
+  function loop() {
+    const t = Date.now() / 1000;
+    const W = window.innerWidth, H = window.innerHeight;
+    ctx.clearRect(0, 0, W, H);
+
     Object.entries(activeBubbles).forEach(([id, state]) => {
       const card = document.getElementById('bubble_' + id);
-      if (card) positionBubble(card, state);
+      if (!card) return;
+
+      const profile = state.profile;
+      const hasGPS = myLat && myLng && profile.lat && profile.lng;
+
+      let screenX, screenY, inView, dist = 0, bearing = 0;
+
+      if (hasGPS && myHeading !== null) {
+        // Real directional AR
+        dist = distanceTo(myLat, myLng, profile.lat, profile.lng);
+        bearing = bearingTo(myLat, myLng, profile.lat, profile.lng);
+        const diff = angleDiff(bearing, myHeading);
+        inView = Math.abs(diff) <= HFOV / 2;
+
+        // Map angle to screen X
+        screenX = W/2 + (diff / (HFOV/2)) * (W/2);
+        // Distance affects Y — closer = lower on screen
+        const normalizedDist = Math.min(dist / 50, 1); // 0=near, 1=50m+
+        screenY = H * 0.25 + normalizedDist * H * 0.25;
+
+        state._lastDist = dist;
+        state._bearing = bearing;
+
+        // Update distance label
+        if (dist !== state._prevDist) {
+          state._prevDist = dist;
+          card.innerHTML = buildCardHTML(profile, dist);
+          card.onclick = () => window.openDetail(profile);
+        }
+      } else {
+        // Fallback: random positions, always visible
+        const fy = Math.sin(t + state.floatOffset) * 5;
+        screenX = state.x * W;
+        screenY = state.y * H + fy;
+        inView = true;
+        dist = 0;
+      }
+
+      const cardW = card.offsetWidth || 170;
+      const cardH = card.offsetHeight || 100;
+
+      // Scale by distance
+      const scale = hasGPS ? Math.max(0.55, 1 - Math.min(dist / 100, 0.45)) : 0.85;
+      const opacity = hasGPS ? Math.max(0.4, 1 - Math.min(dist / 80, 0.6)) : 0.9;
+
+      if (inView) {
+        card.classList.remove('hidden');
+        const clampX = Math.max(8, Math.min(W - cardW - 8, screenX - cardW/2));
+        const clampY = Math.max(90, Math.min(H - cardH - 110, screenY - cardH));
+        card.style.left = clampX + 'px';
+        card.style.top = clampY + 'px';
+        card.style.transform = `scale(${scale})`;
+        card.style.transformOrigin = 'bottom center';
+        card.style.opacity = opacity;
+
+        // Anchor dot on canvas
+        ctx.beginPath();
+        ctx.arc(screenX, screenY + 10, 4 * scale, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(0,229,255,${0.4 * scale})`;
+        ctx.fill();
+
+        // Remove direction arrow
+        const arr = document.getElementById('arrow_' + id);
+        if (arr) arr.remove();
+      } else {
+        card.classList.add('hidden');
+        // Show direction arrow at edge
+        showDirectionArrow(id, profile, bearing);
+      }
     });
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    Object.values(activeBubbles).forEach(state => {
-      const x = state.x * canvas.width;
-      const y = (state.y + 0.1) * canvas.height;
-      ctx.beginPath(); ctx.arc(x, y, 4 * state.scale, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(0,229,255,${0.35 * state.scale})`; ctx.fill();
-    });
+
     requestAnimationFrame(loop);
-  };
+  }
   loop();
 }
 
+function showDirectionArrow(id, profile, bearing) {
+  let arrow = document.getElementById('arrow_' + id);
+  if (!arrow) {
+    arrow = document.createElement('div');
+    arrow.className = 'direction-arrow';
+    arrow.id = 'arrow_' + id;
+    arrow.innerHTML = `<div class="arrow-icon">➤</div><div class="arrow-name">${profile.name}</div>`;
+    document.body.appendChild(arrow);
+  }
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const diff = angleDiff(bearing, myHeading);
+  // Place on left or right edge
+  if (diff < 0) {
+    // Target is to the left
+    arrow.style.left = '12px';
+    arrow.style.top = (H/2 - 30) + 'px';
+    arrow.querySelector('.arrow-icon').style.transform = 'rotate(180deg)';
+  } else {
+    // Target is to the right
+    arrow.style.left = (W - 50) + 'px';
+    arrow.style.top = (H/2 - 30) + 'px';
+    arrow.querySelector('.arrow-icon').style.transform = 'rotate(0deg)';
+  }
+}
+
+window.startScanner = async () => {
+  document.getElementById('startScreen').style.display = 'none';
+
+  // Camera
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    document.getElementById('video').srcObject = stream;
+  } catch(e) {
+    document.getElementById('scanStatus').textContent = 'שגיאת מצלמה';
+    document.getElementById('startScreen').style.display = 'flex';
+    return;
+  }
+
+  startGPS();
+  startCompass();
+  startFirebaseListener();
+  startARLoop();
+
+  document.getElementById('scanStatus').textContent = 'מאתחל חיישנים...';
+};
+
 window.openDetail = (profile) => {
   const s = profile.socials || {};
-  const avatarEl = document.getElementById('detailAvatar');
-  avatarEl.innerHTML = profile.avatar
+  document.getElementById('detailAvatar').innerHTML = profile.avatar
     ? `<img src="${profile.avatar}" class="panel-avatar">`
     : `<div class="panel-avatar-ph">👤</div>`;
   document.getElementById('detailName').textContent = profile.name;
@@ -266,10 +503,10 @@ window.openDetail = (profile) => {
   const links = document.getElementById('detailLinks');
   links.innerHTML = '';
   [
-    { key:'linkedin', label:'LinkedIn', icon:'in', base:'https://linkedin.com/in/' },
-    { key:'instagram', label:'Instagram', icon:'📷', base:'https://instagram.com/' },
-    { key:'twitter', label:'Twitter / X', icon:'𝕏', base:'https://twitter.com/' },
-    { key:'github', label:'GitHub', icon:'⌥', base:'https://github.com/' },
+    {key:'linkedin', label:'LinkedIn', icon:'in', base:'https://linkedin.com/in/'},
+    {key:'instagram', label:'Instagram', icon:'📷', base:'https://instagram.com/'},
+    {key:'twitter', label:'Twitter / X', icon:'𝕏', base:'https://twitter.com/'},
+    {key:'github', label:'GitHub', icon:'⌥', base:'https://github.com/'},
   ].forEach(item => {
     if (s[item.key]) {
       const a = document.createElement('a');
