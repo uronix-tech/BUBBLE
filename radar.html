@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BubbleAR — רדאר</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080c10; --surface: #0f1419; --surface2: #151b22;
+    --border: rgba(255,255,255,0.08); --accent: #00e5ff;
+    --text: #f0f4f8; --muted: rgba(240,244,248,0.5);
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.2rem; border-bottom: 1px solid var(--border); background: rgba(8,12,16,0.95); backdrop-filter: blur(12px); flex-shrink: 0; }
+  .back-btn { color: var(--muted); text-decoration: none; font-size: 1.3rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); border-radius: 50%; border: 1px solid var(--border); }
+  .header-center { text-align: center; }
+  .header-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--accent); letter-spacing: 1px; }
+  .header-sub { font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
+  .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3); border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; color: var(--accent); }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #00e5a0; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Radar canvas area ── */
+  .radar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; min-height: 0; }
+  canvas { border-radius: 50%; display: block; }
+
+  /* ── Range slider ── */
+  .range-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1.4rem; flex-shrink: 0; border-top: 1px solid var(--border); }
+  .range-label { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+  input[type=range] { flex: 1; accent-color: var(--accent); height: 3px; }
+  .range-val { font-size: 0.72rem; color: var(--accent); min-width: 42px; text-align: left; font-family: monospace; }
+
+  /* ── Device list ── */
+  .list-wrap { flex-shrink: 0; max-height: 34vh; overflow-y: auto; border-top: 1px solid var(--border); }
+  .list-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: rgba(0,229,255,0.04); border-bottom: 1px solid var(--border); font-size: 0.62rem; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .device-row { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s; }
+  .device-row:active, .device-row.selected { background: rgba(0,229,255,0.06); }
+  .d-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(0,229,255,0.3); background: rgba(0,229,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; overflow: hidden; }
+  .d-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .d-info { flex: 1; min-width: 0; }
+  .d-name { font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-role { font-size: 0.65rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-dist { font-size: 0.8rem; font-weight: 700; color: var(--accent); font-family: monospace; white-space: nowrap; }
+  .d-signal { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+  .d-signal span { width: 3px; border-radius: 1px; background: rgba(0,229,255,0.2); }
+  .d-signal span.on { background: var(--accent); }
+  .empty-state { padding: 24px; text-align: center; font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Detail panel ── */
+  #detailPanel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(8,12,16,0.97); border-top: 1px solid rgba(0,229,255,0.2); border-radius: 24px 24px 0 0; padding: 1.5rem; z-index: 50; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.34,1.1,0.64,1); }
+  #detailPanel.open { transform: translateY(0); }
+  .panel-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); margin: 0 auto 1.2rem; }
+  .panel-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,229,255,0.4); margin-bottom: 0.8rem; }
+  .panel-avatar-ph { width: 56px; height: 56px; border-radius: 50%; background: rgba(0,229,255,0.15); border: 2px solid rgba(0,229,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 0.8rem; }
+  .panel-name { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
+  .panel-role { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.2rem; }
+  .panel-links { display: flex; flex-direction: column; gap: 0.6rem; }
+  .panel-link { display: flex; align-items: center; gap: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; color: #fff; text-decoration: none; font-size: 0.85rem; }
+  .panel-close { position: absolute; top: 1.2rem; left: 1.2rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a href="scanner.html" class="back-btn">←</a>
+  <div class="header-center">
+    <div class="header-title">◉ רדאר קרבה</div>
+    <div class="header-sub" id="headerSub">מחפש בועות...</div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div><span id="countBadge">0</span></div>
+</div>
+
+<!-- Radar -->
+<div class="radar-wrap">
+  <canvas id="radar"></canvas>
+</div>
+
+<!-- Range slider -->
+<div class="range-row">
+  <span class="range-label">טווח</span>
+  <input type="range" id="rangeSlider" min="100" max="5000" value="1000" step="50">
+  <span class="range-val" id="rangeVal">1.0 ק"מ</span>
+</div>
+
+<!-- Device list -->
+<div class="list-wrap">
+  <div class="list-header">
+    <span>בועות בטווח</span>
+    <span id="sortedNote">ממוין לפי מרחק</span>
+  </div>
+  <div id="deviceList"><div class="empty-state">⌛ מחפש בועות פתוחות...</div></div>
+</div>
+
+<!-- Detail panel (reused from scanner) -->
+<div id="detailPanel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closeDetail()">✕</button>
+  <div id="detailAvatar"></div>
+  <div class="panel-name" id="detailName"></div>
+  <div class="panel-role" id="detailRole"></div>
+  <div class="panel-links" id="detailLinks"></div>
+</div>
+
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+// ── Firebase (same DB as broadcaster / scanner) ────────────────────
+const app = initializeApp({ databaseURL: "https://bubbles-a04a5-default-rtdb.europe-west1.firebasedatabase.app" });
+const db  = getDatabase(app);
+
+// ── State ──────────────────────────────────────────────────────────
+let myLat = null, myLng = null;
+let bubbles = {};          // id → profile from Firebase
+let maxRange = 1000;       // meters
+let selectedId = null;
+let sweepAngle = -Math.PI / 2;
+let rafId = null;
+let sweepStart = null;
+const SWEEP_MS = 3000;
+
+// ── Haversine distance (meters) ────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Bearing (degrees 0–360) ────────────────────────────────────────
+function bearing(lat1, lng1, lat2, lng2) {
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2 * Math.PI / 180);
+  const x = Math.cos(lat1*Math.PI/180) * Math.sin(lat2*Math.PI/180)
+          - Math.sin(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// ── Stable layout angle when no GPS (deterministic per ID) ────────
+// NOT a compass direction — just a fixed visual position on the ring
+function layoutAngle(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return (h % 360) * Math.PI / 180;
+}
+
+// ── Signal strength (1–5 bars) from distance ──────────────────────
+function distToBars(d) {
+  if (d < 50)   return 5;
+  if (d < 200)  return 4;
+  if (d < 500)  return 3;
+  if (d < 1000) return 2;
+  return 1;
+}
+
+// ── GPS ────────────────────────────────────────────────────────────
+navigator.geolocation.watchPosition(
+  pos => {
+    myLat = pos.coords.latitude;
+    myLng = pos.coords.longitude;
+    document.getElementById('headerSub').textContent = 'GPS פעיל · רדאר חי';
+  },
+  () => {
+    document.getElementById('headerSub').textContent = 'ללא GPS — מציג מרחק יחסי';
+  },
+  { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+);
+
+// ── Firebase listener ──────────────────────────────────────────────
+onValue(ref(db, 'bubbles'), snap => {
+  bubbles = snap.val() || {};
+  // Remove stale (>30s)
+  const now = Date.now();
+  Object.keys(bubbles).forEach(k => {
+    if (now - (bubbles[k].timestamp || 0) > 30000) delete bubbles[k];
+  });
+  renderList();
+});
+
+// ── Radar Canvas ───────────────────────────────────────────────────
+const cv  = document.getElementById('radar');
+const ctx = cv.getContext('2d');
+
+function sizeCanvas() {
+  const wrap = cv.parentElement;
+  const s    = Math.min(wrap.clientWidth, wrap.clientHeight) - 8;
+  cv.width   = s; cv.height = s;
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas);
+
+function drawRadar(ts) {
+  if (!sweepStart) sweepStart = ts;
+  sweepAngle = (((ts - sweepStart) % SWEEP_MS) / SWEEP_MS) * Math.PI * 2 - Math.PI / 2;
+
+  const W = cv.width, H = cv.height;
+  const cx = W / 2, cy = H / 2, R = W / 2 - 18;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  bg.addColorStop(0, '#091a12'); bg.addColorStop(1, '#040c07');
+  ctx.beginPath(); ctx.arc(cx, cy, R + 16, 0, Math.PI * 2);
+  ctx.fillStyle = bg; ctx.fill();
+
+  // Range rings
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const r = R * f;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,229,255,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+    const km = (maxRange * f / 1000).toFixed(1);
+    ctx.fillStyle = 'rgba(0,229,255,0.35)'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(km + ' ק"מ', cx, cy - r + 12);
+  });
+
+  // Crosshair
+  [0, 90, 180, 270].forEach(d => {
+    const a = (d - 90) * Math.PI / 180;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+    ctx.strokeStyle = 'rgba(0,229,255,0.07)'; ctx.lineWidth = 1; ctx.stroke();
+  });
+
+  // Sweep trail
+  for (let i = 0; i < 60; i++) {
+    const a0 = sweepAngle - Math.PI * 0.55 * (i / 60);
+    const a1 = sweepAngle - Math.PI * 0.55 * ((i + 1) / 60);
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, a0, a1, true); ctx.closePath();
+    ctx.fillStyle = `rgba(0,229,255,${(1 - i / 60) * 0.22})`; ctx.fill();
+  }
+
+  // Sweep line
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(sweepAngle) * R, cy + Math.sin(sweepAngle) * R);
+  ctx.strokeStyle = 'rgba(0,229,255,0.85)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Center dot
+  ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#00e5ff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,229,255,0.1)'; ctx.fill();
+
+  // Devices
+  const now = Date.now();
+  const visibleIds = [];
+
+  Object.entries(bubbles).forEach(([id, p]) => {
+    if (now - (p.timestamp || 0) > 30000) return;
+    if (p.mode === 'off') return;
+
+    let dist = null;
+    let angle = layoutAngle(id); // fallback: no GPS
+
+    if (myLat && myLng && p.lat && p.lng) {
+      dist  = haversine(myLat, myLng, p.lat, p.lng);
+      angle = bearing(myLat, myLng, p.lat, p.lng) * Math.PI / 180 - Math.PI / 2;
+    }
+
+    const displayDist = dist ?? maxRange * 0.4; // no GPS → place mid-ring
+    if (dist !== null && dist > maxRange) return; // outside range
+    visibleIds.push(id);
+
+    const pd    = Math.min(displayDist / maxRange, 1) * R;
+    const dx    = cx + Math.cos(angle) * pd;
+    const dy    = cy + Math.sin(angle) * pd;
+    const sel   = id === selectedId;
+    const close = dist !== null && dist < 30;
+
+    // Uncertainty band
+    const bw = pd * 0.13 + 5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pd + bw / 2, 0, Math.PI * 2);
+    ctx.arc(cx, cy, Math.max(1, pd - bw / 2), 0, Math.PI * 2, true);
+    ctx.fillStyle = sel ? 'rgba(0,229,255,0.12)' : 'rgba(0,229,255,0.06)'; ctx.fill();
+
+    // Glow
+    const gr = ctx.createRadialGradient(dx, dy, 0, dx, dy, sel ? 26 : 15);
+    gr.addColorStop(0, sel ? 'rgba(0,229,255,0.85)' : 'rgba(0,229,255,0.6)');
+    gr.addColorStop(1, 'rgba(0,229,255,0)');
+    ctx.beginPath(); ctx.arc(dx, dy, sel ? 26 : 15, 0, Math.PI * 2);
+    ctx.fillStyle = gr; ctx.fill();
+
+    // Close warning ring
+    if (close) {
+      ctx.beginPath(); ctx.arc(dx, dy, 22, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,180,0,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    // Dot
+    ctx.beginPath(); ctx.arc(dx, dy, sel ? 7 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = sel ? '#ffffff' : '#00e5ff'; ctx.fill();
+
+    // Name label (smart side)
+    const onRight = dx <= cx;
+    ctx.textAlign = onRight ? 'left' : 'right';
+    const lx = onRight ? dx + 10 : dx - 10;
+    ctx.fillStyle = sel ? '#ffffff' : '#00e5ff';
+    ctx.font = `${sel ? 'bold ' : ''}11px Syne, monospace`;
+    ctx.fillText(p.name || '?', lx, dy - 4);
+    if (dist !== null) {
+      ctx.fillStyle = 'rgba(0,229,255,0.45)'; ctx.font = '9px monospace';
+      ctx.fillText(dist < 1000 ? Math.round(dist) + 'מ' : (dist/1000).toFixed(1) + 'ק"מ', lx, dy + 8);
+    }
+  });
+
+  ctx.textAlign = 'left';
+  document.getElementById('countBadge').textContent = visibleIds.length;
+  rafId = requestAnimationFrame(drawRadar);
+}
+rafId = requestAnimationFrame(drawRadar);
+
+// ── Device list ────────────────────────────────────────────────────
+function renderList() {
+  const now  = Date.now();
+  const list = document.getElementById('deviceList');
+  const entries = Object.entries(bubbles)
+    .filter(([, p]) => p.mode !== 'off' && now - (p.timestamp||0) < 30000)
+    .map(([id, p]) => {
+      const dist = (myLat && myLng && p.lat && p.lng)
+        ? haversine(myLat, myLng, p.lat, p.lng) : null;
+      return { id, p, dist };
+    })
+    .filter(e => e.dist === null || e.dist <= maxRange)
+    .sort((a, b) => (a.dist ?? 9999) - (b.dist ?? 9999));
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-state">אין בועות פתוחות בטווח</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(({ id, p, dist }) => {
+    const bars    = distToBars(dist ?? 500);
+    const distStr = dist === null ? '–'
+                  : dist < 1000 ? Math.round(dist) + 'מ'
+                  : (dist/1000).toFixed(1) + ' ק"מ';
+    const avatarHtml = p.avatar
+      ? `<div class="d-avatar"><img src="${p.avatar}"></div>`
+      : `<div class="d-avatar">👤</div>`;
+    const barsHtml = [1,2,3,4,5].map(i =>
+      `<span class="${i <= bars ? 'on' : ''}" style="height:${3+i*2}px"></span>`
+    ).join('');
+    return `
+      <div class="device-row ${id===selectedId?'selected':''}" onclick="selectDevice('${id}')">
+        ${avatarHtml}
+        <div class="d-info">
+          <div class="d-name">${p.name||'?'}</div>
+          <div class="d-role">${[p.role,p.company].filter(Boolean).join(' · ')||'&nbsp;'}</div>
+        </div>
+        <div class="d-dist">${distStr}</div>
+        <div class="d-signal">${barsHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── Range slider ───────────────────────────────────────────────────
+document.getElementById('rangeSlider').addEventListener('input', e => {
+  maxRange = +e.target.value;
+  const km = (maxRange / 1000).toFixed(1);
+  document.getElementById('rangeVal').textContent = km + ' ק"מ';
+  renderList();
+});
+
+// ── Select device ──────────────────────────────────────────────────
+window.selectDevice = (id) => {
+  selectedId = id;
+  renderList();
+  const p = bubbles[id];
+  if (!p) return;
+  openDetail(p);
+};
+
+// ── Detail panel ───────────────────────────────────────────────────
+function openDetail(p) {
+  const s = p.socials || {};
+  document.getElementById('detailAvatar').innerHTML = p.avatar
+    ? `<img src="${p.avatar}" class="panel-avatar">`
+    : `<div class="panel-avatar-ph">👤</div>`;
+  document.getElementById('detailName').textContent  = p.name || '?';
+  document.getElementById('detailRole').textContent  = [p.role, p.company].filter(Boolean).join(' · ');
+  const links = document.getElementById('detailLinks');
+  links.innerHTML = '';
+  [
+    { key:'linkedin',  label:'LinkedIn',    icon:'in', base:'https://linkedin.com/in/'  },
+    { key:'instagram', label:'Instagram',   icon:'📷', base:'https://instagram.com/'    },
+    { key:'twitter',   label:'Twitter / X', icon:'𝕏',  base:'https://twitter.com/'     },
+    { key:'github',    label:'GitHub',      icon:'⌥',  base:'https://github.com/'      },
+  ].forEach(item => {
+    if (s[item.key]) {
+      const a = document.createElement('a');
+      a.href = item.base + s[item.key].replace('@','');
+      a.className = 'panel-link'; a.target = '_blank';
+      a.innerHTML = `<span style="width:24px;text-align:center">${item.icon}</span> ${item.label}
+        <span style="margin-right:auto;font-size:0.75rem;color:rgba(255,255,255,0.35)">${s[item.key]}</span>`;
+      links.appendChild(a);
+    }
+  });
+  if (!links.children.length)
+    links.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem">אין קישורים</p>';
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+window.closeDetail = () => {
+  document.getElementById('detailPanel').classList.remove('open');
+  selectedId = null;
+  renderList();
+};
+</script>
+</body>
+</html>
